@@ -8,6 +8,9 @@ class Scraper:
         self.BASE_URL = url
         self.STYLE_BASE_URL = f"{self.BASE_URL}style/"
 
+    def get_bpm_media(self, list_bpm):
+        return round((sum(list(map(int, list_bpm))) / len(list_bpm)))
+
     def fetch(self, url):
         try:
             sleep(1)
@@ -37,6 +40,9 @@ class Scraper:
             url=selector.css(f"#{post} h1 > a::attr(href)").get(),
             img=selector.css(f"#{post} > div > a > img::attr(src)").get(),
             tracks=selector.css(f"#{post} > div > div > span.t::text").getall(),
+            media_bpm=self.get_bpm_media(
+                selector.css(f"#{post} > div > div > span.d::text").re(r"\d+")
+            ),
         )
 
     def get_all_albums(self, html_content):
