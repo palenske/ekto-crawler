@@ -8,9 +8,6 @@ class Scraper:
         self.BASE_URL = url
         self.STYLE_BASE_URL = f"{self.BASE_URL}style/"
 
-    def get_bpm_media(self, list_bpm):
-        return round((sum(list(map(int, list_bpm))) / len(list_bpm)))
-
     def fetch(self, url):
         try:
             sleep(1)
@@ -25,6 +22,12 @@ class Scraper:
     def get_categories(self, html_content):
         selector = Selector(text=html_content)
         return selector.css("#sidemenu > div:nth-child(2) > a::text").getall()
+
+    def get_bpm_media(self, list_bpm):
+        try:
+            return round((sum(list(map(int, list_bpm))) / len(list_bpm)))
+        except ZeroDivisionError:
+            return None
 
     def get_album_data(self, html_content, post):
         selector = Selector(text=html_content)
@@ -59,11 +62,11 @@ class Scraper:
 
         albums_data = self.get_all_albums(html_content)
 
-        [albums_data.extend(self.get_all_albums(html_content)) for url in url_list]
+        [albums_data.extend(self.get_all_albums(self.fetch(url))) for url in url_list]
 
         return albums_data
 
 
 scrape = Scraper("https://ektoplazm.com/")
 
-print(scrape.scrape_posts_style("psy-dub"))
+print(scrape.scrape_posts_style("organic"))
