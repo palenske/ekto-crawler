@@ -36,6 +36,7 @@ class Scraper:
             ),
             url=selector.css(f"#{post} h1 > a::attr(href)").get(),
             img=selector.css(f"#{post} > div > a > img::attr(src)").get(),
+            tracks=selector.css(f"#{post} > div > div > span.t::text").getall(),
         )
 
     def get_all_albums(self, html_content):
