@@ -33,6 +33,7 @@ class Scraper:
 
     def get_album_data(self, html_content, post):
         selector = Selector(text=html_content)
+
         return dict(
             title=selector.css(f"#{post} > h1 > a::text").get(),
             styles=selector.css(f"#{post} span.style > strong > a::text").getall(),
@@ -64,7 +65,9 @@ class Scraper:
 
         albums_data = self.get_all_albums(html_content)
 
-        [albums_data.extend(self.get_all_albums(self.fetch(url))) for url in url_list]
+        for url in url_list:
+            new_html_content = self.fetch(url)
+            albums_data.extend(self.get_all_albums(new_html_content))
 
         Pkl_Manager.write_file(f"src/data/by_category/{style}.pkl")
 
@@ -73,4 +76,4 @@ class Scraper:
 
 scrape = Scraper("https://ektoplazm.com/")
 
-print(scrape.scrape_posts_style("progressive"))
+print(scrape.scrape_posts_style("psy-dub"))
