@@ -1,6 +1,8 @@
 import requests
+import pickle
 from time import sleep
 from parsel import Selector
+from utils.pkl_manager import Pkl_Manager
 
 # https://ektoplazm.com/
 class Scraper:
@@ -64,9 +66,11 @@ class Scraper:
 
         [albums_data.extend(self.get_all_albums(self.fetch(url))) for url in url_list]
 
+        Pkl_Manager.write_file(f"src/data/by_category/{style}.pkl")
+
         return albums_data
 
 
 scrape = Scraper("https://ektoplazm.com/")
 
-print(scrape.scrape_posts_style("organic"))
+print(scrape.scrape_posts_style("progressive"))
