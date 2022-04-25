@@ -2,10 +2,11 @@ import requests
 from time import sleep
 from parsel import Selector
 
-
+# https://ektoplazm.com/
 class Scraper:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, url) -> None:
+        self.BASE_URL = url
+        self.STYLE_BASE_URL = f"{self.BASE_URL}style/"
 
     def fetch(self, url):
         try:
@@ -22,41 +23,40 @@ class Scraper:
         selector = Selector(text=html_content)
         return selector.css("#sidemenu > div:nth-child(2) > a::text").getall()
 
+    def get_album_data(self, html_content, post):
+        selector = Selector(text=html_content)
+        return dict(
+            title=selector.css(f"#{post} > h1 > a::text").get(),
+            styles=selector.css(f"#{post} span.style > strong > a::text").getall(),
+            download_count=selector.css(
+                f"#{post} div > p > span > span.dc > strong::text"
+            ).get(),
+            comments_count=selector.css(f"#{post} p.postmetadata > a::text").re_first(
+                r"\d+"
+            ),
+            url=selector.css(f"#{post} h1 > a::attr(href)").get(),
+            img=selector.css(f"#{post} > div > a > img::attr(src)").get(),
+        )
+
+    def get_all_albums(self, html_content):
+        selector = Selector(text=html_content)
+        posts_list_id = selector.css(".post::attr(id)").getall()
+        return [self.get_album_data(html_content, post_id) for post_id in posts_list_id]
+
     def scrape_posts_style(self, style):
-        self.max_pages = 0
-        BASE_URL = f"https://ektoplazm.com/style/{style}"
+        url = f"{self.STYLE_BASE_URL}{style}"
+        html_content = self.fetch(url)
+        selector = Selector(text=html_content)
+        max_pages = selector.css(".navigation span.pages::text").re(r"\d+")[1]
+        url_list = [f"{url}/page/{n}" for n in range(2, int(max_pages) + 1)]
 
-        def get_album_data(url):
-            html_content = self.fetch(url)
-            selector = Selector(text=html_content)
-            self.max_pages = selector.css(".navigation span.pages::text").re(r"\d+")[1]
-            posts_list_id = selector.css(".post::attr(id)").getall()
-            return [
-                dict(
-                    title=selector.css(f"#{post} > h1 > a::text").get(),
-                    styles=selector.css(
-                        f"#{post} span.style > strong > a::text"
-                    ).getall(),
-                    download_count=selector.css(
-                        f"#{post} div > p > span > span.dc > strong::text"
-                    ).get(),
-                    comments_count=selector.css(
-                        f"#{post} p.postmetadata > a::text"
-                    ).re_first(r"\d+"),
-                    url=selector.css(f"#{post} h1 > a::attr(href)").get(),
-                )
-                for post in posts_list_id
-            ]
+        albums_data = self.get_all_albums(html_content)
 
-        album_data = get_album_data(BASE_URL)
+        [albums_data.extend(self.get_all_albums(html_content)) for url in url_list]
 
-        url_list = [f"{BASE_URL}/page/{n}" for n in range(2, int(self.max_pages) + 1)]
-
-        [album_data.extend(get_album_data(url)) for url in url_list]
-
-        return album_data
+        return albums_data
 
 
-scrape = Scraper()
+scrape = Scraper("https://ektoplazm.com/")
 
 print(scrape.scrape_posts_style("psy-dub"))
