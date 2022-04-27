@@ -11,13 +11,14 @@ class Scraper:
         self.STYLE_BASE_URL = f"{self.BASE_URL}style/"
 
     def fetch(self, url):
+        time_list = [5, 4, 2, 3]
         proxies = {
             "https": "200.116.164.252:8080",
             "http": "103.149.162.195:80",
             "http": "101.33.70.103:80",
         }
         try:
-            sleep(3)
+            sleep(random.choice(time_list))
             response = requests.get(url, timeout=5)
         except requests.Timeout:
             return None
@@ -81,4 +82,4 @@ class Scraper:
 
 scrape = Scraper("https://ektoplazm.com/")
 
-print(scrape.scrape_posts_style("psy-dub"))
+print(scrape.scrape_posts_style("techtrance"))
