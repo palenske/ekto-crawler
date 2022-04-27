@@ -1,6 +1,8 @@
 import requests
 from time import sleep
+import random
 from parsel import Selector
+from utils.pkl_manager import Pkl_Manager
 
 # https://ektoplazm.com/
 class Scraper:
@@ -8,13 +10,15 @@ class Scraper:
         self.BASE_URL = url
         self.STYLE_BASE_URL = f"{self.BASE_URL}style/"
 
-    def get_bpm_media(self, list_bpm):
-        return round((sum(list(map(int, list_bpm))) / len(list_bpm)))
-
     def fetch(self, url):
+        proxies = {
+            "https": "200.116.164.252:8080",
+            "http": "103.149.162.195:80",
+            "http": "101.33.70.103:80",
+        }
         try:
-            sleep(1)
-            response = requests.get(url, timeout=3)
+            sleep(3)
+            response = requests.get(url, timeout=5)
         except requests.Timeout:
             return None
         else:
@@ -26,8 +30,15 @@ class Scraper:
         selector = Selector(text=html_content)
         return selector.css("#sidemenu > div:nth-child(2) > a::text").getall()
 
+    def get_bpm_media(self, list_bpm):
+        try:
+            return round((sum(list(map(int, list_bpm))) / len(list_bpm)))
+        except ZeroDivisionError:
+            return None
+
     def get_album_data(self, html_content, post):
         selector = Selector(text=html_content)
+
         return dict(
             title=selector.css(f"#{post} > h1 > a::text").get(),
             styles=selector.css(f"#{post} span.style > strong > a::text").getall(),
@@ -56,10 +67,14 @@ class Scraper:
         selector = Selector(text=html_content)
         max_pages = selector.css(".navigation span.pages::text").re(r"\d+")[1]
         url_list = [f"{url}/page/{n}" for n in range(2, int(max_pages) + 1)]
+        random.shuffle(url_list)
 
         albums_data = self.get_all_albums(html_content)
+        for url in url_list:
+            new_html_content = self.fetch(url)
+            albums_data.extend(self.get_all_albums(new_html_content))
 
-        [albums_data.extend(self.get_all_albums(html_content)) for url in url_list]
+        Pkl_Manager.write_file(albums_data, f"src/data/by_category/{style}.pkl")
 
         return albums_data
 
